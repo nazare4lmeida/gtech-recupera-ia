@@ -1,0 +1,139 @@
+{
+  "results": [
+    {
+      "id": 1,
+      "name": "Nazare Almeida",
+      "email": "nazyalmeida@gmail.com",
+      "score": 10,
+      "max": 10,
+      "passed": true,
+      "cats": {
+        "Recuperacao": {
+          "c": 10,
+          "t": 10
+        }
+      },
+      "ts": 1774710235718
+    }
+  ],
+  "recoveryResults": [
+    {
+      "id": 2,
+      "name": "Nazare Almeida",
+      "email": "nazyalmeida@gmail.com",
+      "course": "recuperacao",
+      "score": 7,
+      "passed": true,
+      "ts": 1774712225267,
+      "projectScore": 0,
+      "bestScore": 7
+    },
+    {
+      "id": 1,
+      "name": "Nazare Almeida",
+      "email": "nazyalmeida@gmail.com",
+      "course": "recuperacao",
+      "score": 7,
+      "passed": true,
+      "ts": 1774711934828,
+      "projectScore": 0,
+      "bestScore": 7
+    }
+  ],
+  "presencaResults": [
+    {
+      "id": 1,
+      "name": "Nazare Almeida",
+      "email": "nazyalmeida@gmail.com",
+      "course": "presenca",
+      "score": 0,
+      "max": 4,
+      "passed": false,
+      "challengePct": 0,
+      "presencaPct": 0,
+      "ts": 1774711912714
+    }
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "order": 1,
+      "difficulty": "beginner",
+      "category": "frontend",
+      "text": "Qual tag HTML é usada para criar um link clicável?",
+      "options": [
+        "<link>",
+        "<a>",
+        "<href>",
+        "<button>"
+      ],
+      "correct": 1,
+      "feedbackOk": "<strong>Correto!</strong> <code>&lt;a&gt;</code> é a tag de âncora do HTML.",
+      "feedbackNok": "<strong>Quase!</strong> A tag correta é <code>&lt;a&gt;</code> (âncora)."
+    },
+    {
+      "id": 2,
+      "order": 2,
+      "difficulty": "beginner",
+      "category": "geral",
+      "text": "O que significa a sigla CSS?",
+      "options": [
+        "Creative Style Sheets",
+        "Computer Style System",
+        "Cascading Style Sheets",
+        "Coded Style Sheets"
+      ],
+      "correct": 2,
+      "feedbackOk": "<strong>Correto!</strong> CSS = Cascading Style Sheets.",
+      "feedbackNok": "<strong>Quase!</strong> CSS = Cascading Style Sheets."
+    },
+    {
+      "id": 3,
+      "order": 3,
+      "difficulty": "intermediate",
+      "category": "lógica",
+      "text": "Qual é o resultado de <code>typeof null</code> em JavaScript?",
+      "options": [
+        "\"null\"",
+        "\"undefined\"",
+        "\"object\"",
+        "\"boolean\""
+      ],
+      "correct": 2,
+      "feedbackOk": "<strong>Correto!</strong> Retorna <code>\"object\"</code> por retrocompatibilidade.",
+      "feedbackNok": "<strong>Quase!</strong> <code>typeof null</code> retorna <code>\"object\"</code>."
+    },
+    {
+      "id": 4,
+      "order": 4,
+      "difficulty": "intermediate",
+      "category": "backend",
+      "text": "Em uma API REST, qual método HTTP atualiza parcialmente um recurso?",
+      "options": [
+        "PUT",
+        "POST",
+        "DELETE",
+        "PATCH"
+      ],
+      "correct": 3,
+      "feedbackOk": "<strong>Correto!</strong> <code>PATCH</code> atualiza parcialmente.",
+      "feedbackNok": "<strong>Quase!</strong> O método correto é <code>PATCH</code>."
+    },
+    {
+      "id": 5,
+      "order": 5,
+      "difficulty": "hard",
+      "category": "frontend",
+      "text": "O que é o Virtual DOM no React?",
+      "options": [
+        "Um banco de dados virtual que armazena componentes",
+        "Uma cópia leve do DOM real usada para calcular mudanças mínimas",
+        "Um sistema de cache para requisições HTTP",
+        "Uma versão do DOM que funciona sem JavaScript"
+      ],
+      "correct": 1,
+      "feedbackOk": "<strong>Correto!</strong> O Virtual DOM melhora a performance do React.",
+      "feedbackNok": "<strong>Quase!</strong> O Virtual DOM é uma representação em memória."
+    }
+  ]
+}
