@@ -18,10 +18,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATA_FILE =
-  process.env.DATA_FILE_PATH || path.resolve(__dirname, "..", "data", "db.json");
+  process.env.DATA_FILE_PATH ||
+  path.resolve(__dirname, "..", "data", "db.json");
 const RESULTS_TABLE = process.env.RESULTS_TABLE || "ia_results";
-const RECOVERY_TABLE = process.env.RECOVERY_RESULTS_TABLE || "ia_recovery_results";
-const PRACTICE_TABLE = process.env.PRESENCA_RESULTS_TABLE || "ia_practice_results";
+const RECOVERY_TABLE =
+  process.env.RECOVERY_RESULTS_TABLE || "ia_recovery_results";
+const PRACTICE_TABLE =
+  process.env.PRESENCA_RESULTS_TABLE || "ia_practice_results";
 const STATUS_TABLE = process.env.MODULE_STATUS_TABLE || "student_module_status";
 
 type CourseSlug = "ia-generativa" | "ia-soft-skills";
@@ -40,7 +43,10 @@ interface StudentModuleStatus {
   updated_at?: number | null;
 }
 
-function normalizeCourse(value: unknown, fallback: CourseSlug = "ia-generativa"): CourseSlug {
+function normalizeCourse(
+  value: unknown,
+  fallback: CourseSlug = "ia-generativa",
+): CourseSlug {
   const normalized = String(value ?? "")
     .trim()
     .toLowerCase();
@@ -52,19 +58,28 @@ function normalizeCourse(value: unknown, fallback: CourseSlug = "ia-generativa")
   return fallback;
 }
 
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL, // Adicione esta linha
+].filter(Boolean) as string[]; // Remove valores vazios caso a env não exista
 
 app.use(
   cors({
     origin(origin, callback) {
+      // Permite requisições sem 'origin' (como mobile apps ou curl)
       if (!origin) return callback(null, true);
 
       const isAllowed =
-        allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
+        allowedOrigins.includes(origin) || origin.endsWith(".vercel.app"); // Mantém a permissão para subdomínios vercel
 
-      callback(null, isAllowed);
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
     },
-  })
+    credentials: true, // Importante para cookies/sessões se precisar no futuro
+  }),
 );
 
 app.use(express.json());
@@ -162,31 +177,59 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
 ];
 
-
 function normalizeModuleType(value: unknown): ModuleType {
-  return String(value ?? "").trim().toLowerCase() === "challenge" ? "challenge" : "recovery";
+  return String(value ?? "")
+    .trim()
+    .toLowerCase() === "challenge"
+    ? "challenge"
+    : "recovery";
 }
 
-function normalizeStatusRow(row: any, moduleType: ModuleType, email: string, course: CourseSlug): StudentModuleStatus {
+function normalizeStatusRow(
+  row: any,
+  moduleType: ModuleType,
+  email: string,
+  course: CourseSlug,
+): StudentModuleStatus {
   return {
     id: row?.id,
-    email: String(row?.email ?? email).trim().toLowerCase(),
+    email: String(row?.email ?? email)
+      .trim()
+      .toLowerCase(),
     course: normalizeCourse(row?.course, course),
     module_type: normalizeModuleType(row?.module_type ?? moduleType),
-    status: row?.status === "completed" ? "completed" : row?.status === "in_progress" ? "in_progress" : "not_started",
+    status:
+      row?.status === "completed"
+        ? "completed"
+        : row?.status === "in_progress"
+          ? "in_progress"
+          : "not_started",
     attempt_count: toNumber(row?.attempt_count, 0),
     completed_at: row?.completed_at ?? null,
     updated_at: row?.updated_at ?? null,
   };
 }
 
-async function getModuleStatus(email: string, course: CourseSlug, moduleType: ModuleType): Promise<StudentModuleStatus> {
-  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+async function getModuleStatus(
+  email: string,
+  course: CourseSlug,
+  moduleType: ModuleType,
+): Promise<StudentModuleStatus> {
+  const normalizedEmail = String(email ?? "")
+    .trim()
+    .toLowerCase();
   const sb = getSupabaseClient();
 
   if (!sb) {
-    const rows = moduleType === "recovery" ? db.recoveryResults : db.presencaResults;
-    const found = rows.find((item: any) => String(item.email ?? "").trim().toLowerCase() === normalizedEmail && normalizeCourse(item.course) === course);
+    const rows =
+      moduleType === "recovery" ? db.recoveryResults : db.presencaResults;
+    const found = rows.find(
+      (item: any) =>
+        String(item.email ?? "")
+          .trim()
+          .toLowerCase() === normalizedEmail &&
+        normalizeCourse(item.course) === course,
+    );
     return {
       email: normalizedEmail,
       course,
@@ -210,8 +253,16 @@ async function getModuleStatus(email: string, course: CourseSlug, moduleType: Mo
   return normalizeStatusRow(data, moduleType, normalizedEmail, course);
 }
 
-async function upsertModuleStatus(email: string, course: CourseSlug, moduleType: ModuleType, status: StudentModuleStatus["status"], completedAt?: number | null) {
-  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+async function upsertModuleStatus(
+  email: string,
+  course: CourseSlug,
+  moduleType: ModuleType,
+  status: StudentModuleStatus["status"],
+  completedAt?: number | null,
+) {
+  const normalizedEmail = String(email ?? "")
+    .trim()
+    .toLowerCase();
   const sb = getSupabaseClient();
   if (!sb) return;
 
@@ -221,29 +272,48 @@ async function upsertModuleStatus(email: string, course: CourseSlug, moduleType:
     course,
     module_type: moduleType,
     status,
-    attempt_count: Math.max(1, current.attempt_count + (status === "completed" && current.status !== "completed" ? 1 : 0)),
+    attempt_count: Math.max(
+      1,
+      current.attempt_count +
+        (status === "completed" && current.status !== "completed" ? 1 : 0),
+    ),
     completed_at: status === "completed" ? (completedAt ?? Date.now()) : null,
     updated_at: Date.now(),
   };
 
-  const { error } = await sb.from(STATUS_TABLE).upsert(payload, { onConflict: "email,course,module_type" });
+  const { error } = await sb
+    .from(STATUS_TABLE)
+    .upsert(payload, { onConflict: "email,course,module_type" });
   if (error) throw error;
 }
 
-async function assertModuleAvailable(email: string, course: CourseSlug, moduleType: ModuleType) {
+async function assertModuleAvailable(
+  email: string,
+  course: CourseSlug,
+  moduleType: ModuleType,
+) {
   const status = await getModuleStatus(email, course, moduleType);
   if (status.status === "completed") {
-    throw new Error(moduleType === "recovery" ? "Prova já concluída para este aluno." : "Desafio já concluído para este aluno.");
+    throw new Error(
+      moduleType === "recovery"
+        ? "Prova já concluída para este aluno."
+        : "Desafio já concluído para este aluno.",
+    );
   }
 }
 
-async function resetModuleStatus(email: string, course: CourseSlug, moduleType: ModuleType) {
-  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+async function resetModuleStatus(
+  email: string,
+  course: CourseSlug,
+  moduleType: ModuleType,
+) {
+  const normalizedEmail = String(email ?? "")
+    .trim()
+    .toLowerCase();
   const sb = getSupabaseClient();
   if (!sb) return;
-  const { error } = await sb
-    .from(STATUS_TABLE)
-    .upsert({
+  const { error } = await sb.from(STATUS_TABLE).upsert(
+    {
       email: normalizedEmail,
       course,
       module_type: moduleType,
@@ -251,7 +321,9 @@ async function resetModuleStatus(email: string, course: CourseSlug, moduleType: 
       attempt_count: 0,
       completed_at: null,
       updated_at: Date.now(),
-    }, { onConflict: "email,course,module_type" });
+    },
+    { onConflict: "email,course,module_type" },
+  );
   if (error) throw error;
 }
 
@@ -273,9 +345,9 @@ function ensureDataFile() {
           questions: DEFAULT_QUESTIONS,
         },
         null,
-        2
+        2,
       ),
-      "utf-8"
+      "utf-8",
     );
   }
 }
@@ -284,13 +356,17 @@ function loadDB(): PersistedDB {
   ensureDataFile();
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")) as Partial<PersistedDB>;
+    const parsed = JSON.parse(
+      fs.readFileSync(DATA_FILE, "utf-8"),
+    ) as Partial<PersistedDB>;
 
     return {
       results: parsed.results ?? [],
       recoveryResults: parsed.recoveryResults ?? [],
       presencaResults: parsed.presencaResults ?? [],
-      questions: parsed.questions?.length ? parsed.questions : DEFAULT_QUESTIONS,
+      questions: parsed.questions?.length
+        ? parsed.questions
+        : DEFAULT_QUESTIONS,
     };
   } catch {
     return {
@@ -326,7 +402,9 @@ function normalizeStudentResult(row: any): StudentResult {
   return {
     id: row.id,
     name: String(row.name ?? "").trim(),
-    email: String(row.email ?? "").trim().toLowerCase(),
+    email: String(row.email ?? "")
+      .trim()
+      .toLowerCase(),
     course: normalizeCourse(row.course),
     score: toNumber(row.score),
     max: toNumber(row.max, 7),
@@ -366,7 +444,10 @@ async function getIaSoftSkillsResults(): Promise<StudentResult[]> {
 }
 
 async function getAllMainResults(): Promise<StudentResult[]> {
-  const [iaGen, iaSoft] = await Promise.all([getIaGenResults(), getIaSoftSkillsResults()]);
+  const [iaGen, iaSoft] = await Promise.all([
+    getIaGenResults(),
+    getIaSoftSkillsResults(),
+  ]);
   return [...iaGen, ...iaSoft].sort((a, b) => b.ts - a.ts);
 }
 
@@ -378,7 +459,9 @@ async function getRecoveryResults(): Promise<RecoveryResult[]> {
       .map((r: any) => ({
         id: r.id,
         name: String(r.name ?? "").trim(),
-        email: String(r.email ?? "").trim().toLowerCase(),
+        email: String(r.email ?? "")
+          .trim()
+          .toLowerCase(),
         course: normalizeCourse(r.course),
         score: toNumber(r.score),
         passed: Boolean(r.passed),
@@ -399,7 +482,9 @@ async function getRecoveryResults(): Promise<RecoveryResult[]> {
   return (data ?? []).map((r: any) => ({
     id: r.id,
     name: String(r.name ?? "").trim(),
-    email: String(r.email ?? "").trim().toLowerCase(),
+    email: String(r.email ?? "")
+      .trim()
+      .toLowerCase(),
     course: normalizeCourse(r.course),
     score: toNumber(r.score),
     passed: Boolean(r.passed),
@@ -417,7 +502,9 @@ async function getPresencaResults(): Promise<PresencaResult[]> {
       .map((r: any) => ({
         id: r.id,
         name: String(r.name ?? "").trim(),
-        email: String(r.email ?? "").trim().toLowerCase(),
+        email: String(r.email ?? "")
+          .trim()
+          .toLowerCase(),
         course: normalizeCourse(r.course),
         score: toNumber(r.score),
         max: toNumber(r.max, 4),
@@ -440,7 +527,9 @@ async function getPresencaResults(): Promise<PresencaResult[]> {
   return (data ?? []).map((r: any) => ({
     id: r.id,
     name: String(r.name ?? "").trim(),
-    email: String(r.email ?? "").trim().toLowerCase(),
+    email: String(r.email ?? "")
+      .trim()
+      .toLowerCase(),
     course: normalizeCourse(r.course),
     score: toNumber(r.score),
     max: toNumber(r.max, 4),
@@ -455,7 +544,7 @@ async function getPresencaResults(): Promise<PresencaResult[]> {
 function buildAdminRowsFromData(
   results: StudentResult[],
   recoveryResults: RecoveryResult[],
-  presencaResults: PresencaResult[]
+  presencaResults: PresencaResult[],
 ): AdminResultRow[] {
   const mainRows: AdminResultRow[] = results.map((r) => ({
     id: r.id,
@@ -515,8 +604,8 @@ async function deleteRow(module: AdminResultRow["module"], id: number) {
     module === "ia-generativa" || module === "ia-soft-skills"
       ? RESULTS_TABLE
       : module === "recuperacao"
-      ? RECOVERY_TABLE
-      : PRACTICE_TABLE;
+        ? RECOVERY_TABLE
+        : PRACTICE_TABLE;
 
   if (sb) {
     const { error } = await sb.from(table).delete().eq("id", id);
@@ -539,18 +628,39 @@ async function deleteRow(module: AdminResultRow["module"], id: number) {
   saveDB();
 }
 
-async function syncModuleResetByDeletion(module: AdminResultRow["module"], id: number) {
+async function syncModuleResetByDeletion(
+  module: AdminResultRow["module"],
+  id: number,
+) {
   const sb = getSupabaseClient();
   if (!sb) return;
 
   if (module === "recuperacao") {
-    const { data } = await sb.from(RECOVERY_TABLE).select("email, course").eq("id", id).maybeSingle();
-    if (data?.email) await resetModuleStatus(data.email, normalizeCourse(data.course), "recovery");
+    const { data } = await sb
+      .from(RECOVERY_TABLE)
+      .select("email, course")
+      .eq("id", id)
+      .maybeSingle();
+    if (data?.email)
+      await resetModuleStatus(
+        data.email,
+        normalizeCourse(data.course),
+        "recovery",
+      );
   }
 
   if (module === "presenca") {
-    const { data } = await sb.from(PRACTICE_TABLE).select("email, course").eq("id", id).maybeSingle();
-    if (data?.email) await resetModuleStatus(data.email, normalizeCourse(data.course), "challenge");
+    const { data } = await sb
+      .from(PRACTICE_TABLE)
+      .select("email, course")
+      .eq("id", id)
+      .maybeSingle();
+    if (data?.email)
+      await resetModuleStatus(
+        data.email,
+        normalizeCourse(data.course),
+        "challenge",
+      );
   }
 }
 
@@ -558,10 +668,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", ts: Date.now() });
 });
 
-
 app.get("/api/student-status", async (req, res) => {
   try {
-    const email = String(req.query.email ?? "").trim().toLowerCase();
+    const email = String(req.query.email ?? "")
+      .trim()
+      .toLowerCase();
     const course = normalizeCourse(req.query.course);
     const [recovery, challenge] = await Promise.all([
       getModuleStatus(email, course, "recovery"),
@@ -625,7 +736,9 @@ app.post("/api/results", async (req, res) => {
 
     const payload = {
       name: String(req.body.name ?? "").trim(),
-      email: String(req.body.email ?? "").trim().toLowerCase(),
+      email: String(req.body.email ?? "")
+        .trim()
+        .toLowerCase(),
       course: normalizeCourse(req.body.course),
       score: toNumber(req.body.score),
       max: toNumber(req.body.max, 7),
@@ -687,7 +800,9 @@ app.post("/api/recovery-results", async (req, res) => {
     const sb = getSupabaseClient();
     const course = normalizeCourse(req.body.course);
 
-    const email = String(req.body.email ?? "").trim().toLowerCase();
+    const email = String(req.body.email ?? "")
+      .trim()
+      .toLowerCase();
     await assertModuleAvailable(email, course, "recovery");
 
     const payload = {
@@ -732,7 +847,13 @@ app.post("/api/recovery-results", async (req, res) => {
       .single();
 
     if (error) throw error;
-    await upsertModuleStatus(payload.email, course, "recovery", "completed", payload.ts);
+    await upsertModuleStatus(
+      payload.email,
+      course,
+      "recovery",
+      "completed",
+      payload.ts,
+    );
 
     return res.status(201).json(data);
   } catch (error: any) {
@@ -771,7 +892,9 @@ app.post("/api/presenca-results", async (req, res) => {
     const sb = getSupabaseClient();
     const course = normalizeCourse(req.body.course);
 
-    const email = String(req.body.email ?? "").trim().toLowerCase();
+    const email = String(req.body.email ?? "")
+      .trim()
+      .toLowerCase();
     await assertModuleAvailable(email, course, "challenge");
 
     const payload = {
@@ -817,7 +940,13 @@ app.post("/api/presenca-results", async (req, res) => {
       .single();
 
     if (error) throw error;
-    await upsertModuleStatus(payload.email, course, "challenge", "completed", payload.ts);
+    await upsertModuleStatus(
+      payload.email,
+      course,
+      "challenge",
+      "completed",
+      payload.ts,
+    );
 
     return res.status(201).json(data);
   } catch (error: any) {
@@ -854,15 +983,17 @@ app.delete("/api/admin-results", async (req, res) => {
 
   try {
     await Promise.all(
-      rows.map(async (row: { id?: number; module?: AdminResultRow["module"] }) => {
-        if (typeof row?.id === "number" && row?.module) {
-          if (row.module === "recuperacao" || row.module === "presenca") {
-            await syncModuleResetByDeletion(row.module, row.id);
+      rows.map(
+        async (row: { id?: number; module?: AdminResultRow["module"] }) => {
+          if (typeof row?.id === "number" && row?.module) {
+            if (row.module === "recuperacao" || row.module === "presenca") {
+              await syncModuleResetByDeletion(row.module, row.id);
+            }
+            return deleteRow(row.module, row.id);
           }
-          return deleteRow(row.module, row.id);
-        }
-        return Promise.resolve();
-      })
+          return Promise.resolve();
+        },
+      ),
     );
 
     res.json({ ok: true, deleted: rows.length });
@@ -879,7 +1010,11 @@ app.get("/api/stats", async (_req, res) => {
       getPresencaResults(),
     ]);
 
-    const allResults = buildAdminRowsFromData(results, recoveryResults, presencaResults);
+    const allResults = buildAdminRowsFromData(
+      results,
+      recoveryResults,
+      presencaResults,
+    );
     const total = allResults.length;
     const passed = allResults.filter((r) => r.passed).length;
 
@@ -888,7 +1023,7 @@ app.get("/api/stats", async (_req, res) => {
           allResults.reduce((sum, r) => {
             const pct = r.max > 0 ? Math.round((r.score / r.max) * 100) : 0;
             return sum + pct;
-          }, 0) / total
+          }, 0) / total,
         )
       : 0;
 
@@ -906,11 +1041,11 @@ app.get("/api/stats", async (_req, res) => {
     });
 
     const iaGenCount = results.filter(
-      (r) => normalizeCourse((r as any).course) === "ia-generativa"
+      (r) => normalizeCourse((r as any).course) === "ia-generativa",
     ).length;
 
     const iaSoftCount = results.filter(
-      (r) => normalizeCourse((r as any).course) === "ia-soft-skills"
+      (r) => normalizeCourse((r as any).course) === "ia-soft-skills",
     ).length;
 
     res.json({
@@ -929,25 +1064,27 @@ app.get("/api/stats", async (_req, res) => {
         total: recoveryResults.length,
         passed: recoveryResults.filter((r) => r.passed).length,
         iaGenerativa: recoveryResults.filter(
-          (r) => normalizeCourse(r.course) === "ia-generativa"
+          (r) => normalizeCourse(r.course) === "ia-generativa",
         ).length,
         iaSoftSkills: recoveryResults.filter(
-          (r) => normalizeCourse(r.course) === "ia-soft-skills"
+          (r) => normalizeCourse(r.course) === "ia-soft-skills",
         ).length,
       },
       presenca: {
         total: presencaResults.length,
         avgPct: presencaResults.length
           ? Math.round(
-              presencaResults.reduce((sum, r) => sum + toNumber(r.presencaPct), 0) /
-                presencaResults.length
+              presencaResults.reduce(
+                (sum, r) => sum + toNumber(r.presencaPct),
+                0,
+              ) / presencaResults.length,
             )
           : 0,
         iaGenerativa: presencaResults.filter(
-          (r) => normalizeCourse(r.course) === "ia-generativa"
+          (r) => normalizeCourse(r.course) === "ia-generativa",
         ).length,
         iaSoftSkills: presencaResults.filter(
-          (r) => normalizeCourse(r.course) === "ia-soft-skills"
+          (r) => normalizeCourse(r.course) === "ia-soft-skills",
         ).length,
       },
     });
@@ -960,8 +1097,12 @@ app.post("/api/admin-auth", (req, res) => {
   const { email, adminCode } = req.body ?? {};
 
   const isValid =
-    String(email ?? "").trim().toLowerCase() ===
-      String(process.env.ADMIN_EMAIL ?? "").trim().toLowerCase() &&
+    String(email ?? "")
+      .trim()
+      .toLowerCase() ===
+      String(process.env.ADMIN_EMAIL ?? "")
+        .trim()
+        .toLowerCase() &&
     String(adminCode ?? "").trim() ===
       String(process.env.ADMIN_ACCESS_CODE ?? "").trim();
 
@@ -971,7 +1112,7 @@ app.post("/api/admin-auth", (req, res) => {
 if (!hasSupabaseConfig) {
   console.warn(
     "[server] Supabase não configurado. Usando persistência local em",
-    DATA_FILE
+    DATA_FILE,
   );
 }
 
