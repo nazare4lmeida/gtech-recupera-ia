@@ -36,24 +36,49 @@ function evaluatePrompt(
   minimumRequiredToPass: number,
 ): EvaluationResult {
   const normalizedAnswer = normalize(answer);
-  const foundRequired = requiredItems.filter((item) =>
-    normalizedAnswer.includes(normalize(item)),
-  );
-  const missingRequired = requiredItems.filter(
-    (item) => !normalizedAnswer.includes(normalize(item)),
-  );
-  const foundBonus = bonusItems.filter((item) =>
-    normalizedAnswer.includes(normalize(item)),
-  );
-  const score = foundRequired.length + foundBonus.length;
-  const max = requiredItems.length + bonusItems.length;
+  const words = normalizedAnswer
+    .split(" ")
+    .map((word) => word.trim())
+    .filter(Boolean);
+
+  const wordCount = words.length;
+  const lineCount = answer
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean).length;
+
+  const hasPunctuation = /[.:;!?-]/.test(answer);
+  const hasInstructionTone =
+    /\b(voce|você|aja|atue|responda|explique|analise|considere|gere|crie|organize|estruture|produza|descreva)\b/i.test(
+      answer,
+    );
+
+  const hasStructureCue =
+    /\b(contexto|objetivo|tarefa|instrucao|instrução|saida|saída|formato|tom|etapas|passos|criterios|critérios)\b/i.test(
+      answer,
+    );
+
+  const qualitySignals: string[] = [];
+  if (wordCount >= 40)
+    qualitySignals.push("texto com extensão mínima adequada");
+  if (lineCount >= 2) qualitySignals.push("texto minimamente estruturado");
+  if (hasPunctuation) qualitySignals.push("redação minimamente organizada");
+  if (hasInstructionTone)
+    qualitySignals.push("linguagem compatível com instrução para IA");
+  if (hasStructureCue)
+    qualitySignals.push("presença de elementos de orientação");
+
+  const score = qualitySignals.length;
+  const max = 5;
+  const passed = score >= 2;
+
   return {
-    foundRequired,
-    missingRequired,
-    foundBonus,
+    foundRequired: qualitySignals,
+    missingRequired: [],
+    foundBonus: [],
     score,
     max,
-    passed: foundRequired.length >= minimumRequiredToPass,
+    passed,
   };
 }
 
@@ -187,7 +212,7 @@ export default function DesafioPresenca() {
         course: state.user!.course,
         score: result.score,
         max: result.max,
-        passed: challengePct >= 75,
+        passed: result.passed,
         previousPct: baseAttendance,
         challengePct,
         presencaPct: finalPct,
@@ -273,23 +298,15 @@ export default function DesafioPresenca() {
             </article>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6">
             <div className="data-card">
-              <span className="text-sm text-muted">Frequência atual</span>
+              <span className="text-sm text-muted">Resultado do desafio</span>
               <strong
-                className={`mt-2 block text-2xl font-semibold ${rules.currentPct >= 75 ? "stat-success" : "stat-danger"}`}
+                className={`mt-2 block text-2xl font-semibold ${evaluation && evaluation.passed ? "stat-success" : "stat-danger"}`}
               >
-                {rules.currentPct}%
-              </strong>
-            </div>
-            <div className="data-card">
-              <span className="text-sm text-muted">
-                Frequência final projetada
-              </span>
-              <strong
-                className={`mt-2 block text-2xl font-semibold ${rules.finalPct >= 75 ? "stat-success" : "stat-danger"}`}
-              >
-                {rules.finalPct}%
+                {evaluation
+                  ? `${Math.round((evaluation.score / Math.max(evaluation.max, 1)) * 100)}%`
+                  : "--%"}
               </strong>
             </div>
           </div>
@@ -299,13 +316,38 @@ export default function DesafioPresenca() {
               <h4 className="text-lg font-semibold text-text">
                 Feedback do envio
               </h4>
+
               <p className="mt-3 text-sm text-muted">
-                Itens encontrados:{" "}
-                <strong className="stat-success">
-                  {evaluation.foundRequired.length}
-                </strong>{" "}
-                de <strong>{challenge.requiredItems.length}</strong>.
+                Pontuação de qualidade do prompt:{" "}
+                <strong className="stat-success">{evaluation.score}</strong> de{" "}
+                <strong>{evaluation.max}</strong>.
               </p>
+
+              <p className="mt-3 text-sm text-muted">
+                Resultado do desafio:{" "}
+                <strong
+                  className={evaluation.passed ? "stat-success" : "stat-danger"}
+                >
+                  {evaluation.passed ? "aprovado" : "não aprovado"}
+                </strong>
+              </p>
+
+              {evaluation.foundRequired.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-text">
+                    Sinais de qualidade identificados
+                  </p>
+                  <ul className="mt-2 space-y-2 text-sm text-text">
+                    {evaluation.foundRequired.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-blue" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <button
                 type="button"
                 className="primary-btn mt-6 w-full"

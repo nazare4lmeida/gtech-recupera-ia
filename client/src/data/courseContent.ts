@@ -313,63 +313,39 @@ const IA_SOFT_SKILLS_QUESTIONS: RecoveryQuestion[] = [
 const IA_GENERATIVA_PROMPT_CHALLENGE: PromptChallengeDefinition = {
   id: "gen-rag-01",
   course: "ia-generativa",
-  title: "Desafio prático · Prompt para assistente com contexto recuperado",
+  title: "Desafio prático · Escrita livre de prompt",
   intro:
-    "Neste desafio, você não vai programar uma função. Você vai escrever um prompt técnico, com instruções claras e verificáveis.",
+    "Neste desafio, você vai escrever livremente um prompt com base no que estudou no roteiro.",
   scenario:
-    "Você precisa orientar um assistente de IA que responde dúvidas de alunos usando trechos recuperados de uma base documental interna do curso. O modelo só pode responder com base no contexto recebido na entrada.",
+    "Com base no Study Guide da trilha, escreva um prompt autoral, claro e útil, demonstrando que você compreendeu como orientar uma IA para executar uma tarefa de forma adequada.",
   instructions: [
-    "Escreva um prompt completo para esse assistente.",
-    "O texto deve deixar claro o papel do assistente, a tarefa, as restrições e o formato esperado da resposta.",
-    "O prompt deve ser utilizável em um sistema real, sem depender de interpretação implícita.",
+    "Escreva um prompt livre, autoral e coerente com os conceitos estudados no roteiro.",
+    "Não existe uma estrutura única obrigatória.",
+    "O objetivo é demonstrar clareza, intenção, contexto e qualidade na instrução criada.",
   ],
-  requiredItems: [
-    "usar apenas o contexto fornecido",
-    "se a informação não estiver no contexto",
-    "não invente informações",
-    "responda em tópicos",
-    "cite a fonte",
-    "máximo de 5 linhas",
-  ],
-  bonusItems: [
-    "tom claro e objetivo",
-    "priorize precisão",
-    "indique quando houver ambiguidade",
-  ],
-  minimumRequiredToPass: 5,
-  placeholder:
-    "Ex.: Papel: você é um assistente...\nObjetivo: responder dúvidas...\nRestrições: use apenas...\nFormato de saída: ...",
+  requiredItems: [],
+  bonusItems: [],
+  minimumRequiredToPass: 0,
+  placeholder: "Escreva aqui seu prompt livre com base no conteúdo estudado.",
 };
 
 const IA_SOFT_SKILLS_PROMPT_CHALLENGE: PromptChallengeDefinition = {
   id: "soft-feedback-01",
   course: "ia-soft-skills",
-  title: "Desafio prático · Prompt para feedback técnico construtivo",
+  title: "Desafio prático · Escrita livre de prompt",
   intro:
-    "Neste desafio, você vai escrever um prompt para orientar uma IA a transformar observações técnicas em feedback profissional.",
+    "Neste desafio, você vai escrever livremente um prompt com base no que estudou no roteiro.",
   scenario:
-    "Você quer usar IA para converter comentários técnicos brutos de revisão de código em uma mensagem respeitosa, clara e útil para a pessoa desenvolvedora.",
+    "Com base no Study Guide da trilha, escreva um prompt autoral, claro e útil, demonstrando que você compreendeu como orientar uma IA em um contexto profissional.",
   instructions: [
-    "Escreva um prompt completo para essa tarefa.",
-    "O prompt deve orientar a IA a manter clareza, respeito e foco em melhoria contínua.",
-    "A resposta esperada da IA deve ter uma estrutura objetiva e aplicável em contexto profissional.",
+    "Escreva um prompt livre, autoral e coerente com os conceitos estudados no roteiro.",
+    "Não existe uma estrutura única obrigatória.",
+    "O objetivo é demonstrar clareza, intenção, contexto e qualidade na instrução criada.",
   ],
-  requiredItems: [
-    "tom respeitoso",
-    "linguagem clara",
-    "pontos fortes",
-    "oportunidades de melhoria",
-    "próximos passos",
-    "evite linguagem agressiva",
-  ],
-  bonusItems: [
-    "considere o contexto do público",
-    "seja objetivo",
-    "mantenha empatia",
-  ],
-  minimumRequiredToPass: 5,
-  placeholder:
-    "Ex.: Contexto: você receberá comentários técnicos...\nTarefa: reescrever...\nTom: respeitoso...\nFormato de saída: ...",
+  requiredItems: [],
+  bonusItems: [],
+  minimumRequiredToPass: 0,
+  placeholder: "Escreva aqui seu prompt livre com base no conteúdo estudado.",
 };
 
 export const COURSE_CONTENT: Record<CourseTrack, CourseContentDefinition> = {

@@ -148,11 +148,27 @@ export default function StudyGuideScreen() {
           <div className="mb-4 flex items-center gap-2">
             <span className="text-xl">🎯</span>
             <h3 className="font-semibold text-text">
-              Modelo de prompt para o desafio
+              Base de estudo para o desafio
             </h3>
           </div>
+
+          <div className="mb-4 rounded-xl border border-border bg-bg p-4">
+            <p className="text-sm text-text">
+              O exemplo abaixo é uma <strong>base de estudo</strong> para te
+              ajudar a revisar como um bom prompt pode ser estruturado.
+            </p>
+            <p className="mt-2 text-sm text-muted">
+              No <strong>Desafio de Presença</strong>, você{" "}
+              <strong>não precisa copiar esse modelo</strong> nem seguir uma
+              estrutura fixa. Você pode escrever <strong>livremente</strong>,
+              com suas próprias palavras, desde que produza um prompt claro,
+              coerente e alinhado com o conteúdo estudado nesta trilha.
+            </p>
+          </div>
+
           <p className="mb-4 text-sm text-muted">
-            Use este modelo como base fiel para responder o Desafio de Presença.
+            Use o exemplo abaixo como referência para estudar os elementos de um
+            bom prompt.
           </p>
           <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-border bg-bg p-5 text-sm leading-relaxed text-text font-mono w-full min-h-[320px]">
             {course === "ia-generativa"
