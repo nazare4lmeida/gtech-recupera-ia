@@ -2,7 +2,7 @@ import { COURSE_CONTENT } from "../data/courseContent";
 import { CourseTrack } from "../types";
 
 export const WINDOW_OPEN = new Date("2026-04-04T17:00:00").getTime();
-export const WINDOW_CLOSE = new Date("2026-04-20T12:00:00").getTime();
+export const WINDOW_CLOSE = new Date("2026-04-23T16:00:00").getTime();
 export const RECOVERY_PASSING_SCORE = 6;
 export const RECOVERY_QUESTIONS = {
   "ia-generativa": COURSE_CONTENT["ia-generativa"].recoveryQuestions,
