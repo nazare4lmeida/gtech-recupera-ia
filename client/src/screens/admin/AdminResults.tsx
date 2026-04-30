@@ -9,6 +9,7 @@ type Props = {
 };
 
 type StatusFilter = "all" | "passed" | "failed";
+type CourseFilter = "all" | "ia-generativa" | "ia-soft-skills";
 
 function downloadXlsx(filename: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
@@ -25,6 +26,7 @@ export default function AdminResults({ onToast }: Props) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [courseFilter, setCourseFilter] = useState<CourseFilter>("all");
   const [loading, setLoading] = useState(true);
 
   async function loadRows() {
@@ -69,9 +71,12 @@ export default function AdminResults({ onToast }: Props) {
         (statusFilter === "passed" && row.passed) ||
         (statusFilter === "failed" && !row.passed);
 
-      return matchesQuery && matchesStatus;
+      const matchesCourse =
+        courseFilter === "all" || row.course === courseFilter;
+
+      return matchesQuery && matchesStatus && matchesCourse;
     });
-  }, [rows, query, statusFilter]);
+  }, [rows, query, statusFilter, courseFilter]);
 
   const exportRows = useMemo(
     () =>
@@ -197,7 +202,7 @@ export default function AdminResults({ onToast }: Props) {
         </div>
       </div>
 
-      <section className="grid gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_180px_auto]">
+      <section className="grid gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_180px_180px_auto]">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -213,6 +218,16 @@ export default function AdminResults({ onToast }: Props) {
           <option value="all">Todos os status</option>
           <option value="passed">Aprovados</option>
           <option value="failed">Reprovados</option>
+        </select>
+
+        <select
+          value={courseFilter}
+          onChange={(e) => setCourseFilter(e.target.value as CourseFilter)}
+          className="rounded-xl border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none focus:border-primary"
+        >
+          <option value="all">Todas as formações</option>
+          <option value="ia-generativa">IA Generativa</option>
+          <option value="ia-soft-skills">IA + Soft Skills</option>
         </select>
 
         <div className="self-center text-right text-sm text-muted">
