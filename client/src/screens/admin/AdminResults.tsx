@@ -10,6 +10,7 @@ type Props = {
 
 type StatusFilter = "all" | "passed" | "failed";
 type CourseFilter = "all" | "ia-generativa" | "ia-soft-skills";
+type ModuleFilter = "all" | "recuperacao" | "presenca";
 
 function downloadXlsx(filename: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
@@ -27,6 +28,7 @@ export default function AdminResults({ onToast }: Props) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [courseFilter, setCourseFilter] = useState<CourseFilter>("all");
+  const [moduleFilter, setModuleFilter] = useState<ModuleFilter>("all");
   const [loading, setLoading] = useState(true);
 
   async function loadRows() {
@@ -74,9 +76,12 @@ export default function AdminResults({ onToast }: Props) {
       const matchesCourse =
         courseFilter === "all" || row.course === courseFilter;
 
-      return matchesQuery && matchesStatus && matchesCourse;
+      const matchesModule =
+        moduleFilter === "all" || row.module === moduleFilter;
+
+      return matchesQuery && matchesStatus && matchesCourse && matchesModule;
     });
-  }, [rows, query, statusFilter, courseFilter]);
+  }, [rows, query, statusFilter, courseFilter, moduleFilter]);
 
   const exportRows = useMemo(
     () =>
@@ -202,7 +207,7 @@ export default function AdminResults({ onToast }: Props) {
         </div>
       </div>
 
-      <section className="grid gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_180px_180px_auto]">
+      <section className="grid gap-3 rounded-card border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_180px_180px_180px_auto]">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -228,6 +233,16 @@ export default function AdminResults({ onToast }: Props) {
           <option value="all">Todas as formações</option>
           <option value="ia-generativa">IA Generativa</option>
           <option value="ia-soft-skills">IA + Soft Skills</option>
+        </select>
+
+        <select
+          value={moduleFilter}
+          onChange={(e) => setModuleFilter(e.target.value as ModuleFilter)}
+          className="rounded-xl border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none focus:border-primary"
+        >
+          <option value="all">Todos os módulos</option>
+          <option value="recuperacao">Prova de Recuperação</option>
+          <option value="presenca">Desafio de Presença</option>
         </select>
 
         <div className="self-center text-right text-sm text-muted">
