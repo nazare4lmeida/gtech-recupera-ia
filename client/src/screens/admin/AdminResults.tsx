@@ -59,14 +59,21 @@ export default function AdminResults({ onToast }: Props) {
   }, []);
 
   const filteredRows = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizar = (str: string) =>
+      (str || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9 @._-]/g, "");
+
+    const normalizedQuery = normalizar(query.trim());
 
     return rows.filter((row) => {
       const matchesQuery =
         !normalizedQuery ||
-        row.name.toLowerCase().includes(normalizedQuery) ||
-        row.email.toLowerCase().includes(normalizedQuery) ||
-        row.moduleLabel.toLowerCase().includes(normalizedQuery);
+        normalizar(row.name).includes(normalizedQuery) ||
+        normalizar(row.email).includes(normalizedQuery) ||
+        normalizar(row.moduleLabel).includes(normalizedQuery);
 
       const matchesStatus =
         statusFilter === "all" ||
